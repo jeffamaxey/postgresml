@@ -106,8 +106,7 @@ def set_config(**new_config):
 def get_config():
     config_str = ctypes.c_char_p()
     _check_call(_LIB.XGBGetGlobalConfig(ctypes.byref(config_str)))
-    config = json.loads(py_str(config_str.value))
-    return config
+    return json.loads(py_str(config_str.value))
 
 
 @contextmanager

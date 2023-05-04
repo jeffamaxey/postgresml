@@ -241,7 +241,7 @@ class Project(object):
             Project: instantiated from the database
         """
         if task is None:
-            raise PgMLException(f"You must specify and task when creating a new Project.")
+            raise PgMLException("You must specify and task when creating a new Project.")
         project = cls()
         project.__dict__ = dict(
             plpy.execute(
@@ -302,9 +302,7 @@ class Project(object):
 
     @property
     def task_type(self):
-        if self.task.startswith("translation"):
-            return "translation"
-        return self.task
+        return "translation" if self.task.startswith("translation") else self.task
 
 
 class Snapshot(object):
@@ -438,23 +436,20 @@ class Snapshot(object):
             )
 
         for column in self.y_column_name:
-            if not column in sample[0]:
+            if column not in sample[0]:
                 raise PgMLException(f"Column `{column}` not found. Did you pass the correct `y_column_name`?")
 
         values = ["count(*) AS samples"]
         for (column, value) in dict(sample[0]).items():
-            if isinstance(value, float) or isinstance(value, int):
-                if isinstance(value, bool):
-                    quoted_column = c(column) + "::INT"
-                else:
-                    quoted_column = c(column)
+            if isinstance(value, (float, int)):
+                quoted_column = c(column) + "::INT" if isinstance(value, bool) else c(column)
                 values.append(
                     f"""\n  min({quoted_column})::FLOAT4 AS "{column}_min", max({quoted_column})::FLOAT4 AS "{column}_max", avg({quoted_column})::FLOAT4 AS "{column}_mean", stddev({quoted_column})::FLOAT4 AS "{column}_stddev", percentile_disc(0.25) within group (order by {quoted_column}) AS "{column}_p25", percentile_disc(0.5) within group (order by {quoted_column}) AS "{column}_p50", percentile_disc(0.75) within group (order by {quoted_column}) AS "{column}_p75", count({quoted_column})::INT AS "{column}_count", count(distinct {quoted_column})::INT AS "{column}_distinct", sum(({quoted_column} IS NULL)::int)::INT AS "{column}_nulls" """
                 )
         self.analysis = dict(plpy.execute(f"SELECT {','.join(values)} FROM {self.relation_name}")[0])
 
         for (column, value) in dict(sample[0]).items():
-            if isinstance(value, float) or isinstance(value, int):
+            if isinstance(value, (float, int)):
                 data = [row[column] for row in sample]
                 self.analysis[f"{column}_dip"] = diptest.dipstat(data)
 
@@ -502,31 +497,23 @@ class Snapshot(object):
         X = []
         y = []
         for row in data:
-            y_ = []
-            for column in self.y_column_name:
-                y_.append(row.pop(column))
-
-            x_ = []
-            for feature in features:
-                x_.append(row[feature])
-
+            y_ = [row.pop(column) for column in self.y_column_name]
+            x_ = [row[feature] for feature in features]
             x_ = numpy.array(x_).flatten()  # TODO be smart about flattening X depending on algorithm
             X.append(x_)
             y.append(y_)
 
-        # Split into training and test sets
         if self.test_sampling == "random":
             return train_test_split(X, y, test_size=self.test_size, shuffle=False)
-        else:
-            split = self.test_size
-            if self.test_sampling == "first":
-                X.reverse()
-                y.reverse()
-                if isinstance(split, float):
-                    split = 1.0 - split
+        split = self.test_size
+        if self.test_sampling == "first":
+            X.reverse()
+            y.reverse()
             if isinstance(split, float):
-                split = int(self.test_size * len(X))
-            return X[:split], X[split:], y[:split], y[split:]
+                split = 1.0 - split
+        if isinstance(split, float):
+            split = int(self.test_size * len(X))
+        return X[:split], X[split:], y[:split], y[split:]
 
         # TODO normalize and clean data
 
@@ -551,17 +538,16 @@ class Snapshot(object):
         for name, pg_type in self.features.items():
             if pg_type == "jsonb":
                 value = data[0][name]
-                if type(value) == dict:
-                    if all(isinstance(v, list) for v in value.values()):
-                        features[name] = datasets.Sequence(
-                            {k: datasets.Value(_PYTHON_TO_PANDAS_TYPE_MAP[type(v[0])]) for k, v in value.items()}
-                        )
-                    elif name == "translation":
-                        features[name] = datasets.Translation(languages=list(value.keys()))
-                    else:
-                        raise PgMLException(f"Unhandled json dict: {value}")
-                else:
+                if type(value) != dict:
                     raise PgMLException(f"Unhandled json value: {value}")
+                if all(isinstance(v, list) for v in value.values()):
+                    features[name] = datasets.Sequence(
+                        {k: datasets.Value(_PYTHON_TO_PANDAS_TYPE_MAP[type(v[0])]) for k, v in value.items()}
+                    )
+                elif name == "translation":
+                    features[name] = datasets.Translation(languages=list(value.keys()))
+                else:
+                    raise PgMLException(f"Unhandled json dict: {value}")
             elif name in self.y_column_name:
                 if pg_type == "boolean":
                     features[name] = datasets.ClassLabel(num_classes=2)
@@ -632,7 +618,7 @@ class Model(object):
 
     @classmethod
     def algorithm_from_name_and_task(cls, name: str, task: str):
-        return _ALGORITHM_MAP[name + "_" + task]
+        return _ALGORITHM_MAP[f"{name}_{task}"]
 
     @classmethod
     def create(
@@ -714,7 +700,7 @@ class Model(object):
             Model: most recently created model that fits the criteria
         """
 
-        sql = f"""
+        sql = """
             SELECT models.* 
             FROM pgml.models 
         """
@@ -842,8 +828,11 @@ class Model(object):
             else:
                 algorithm = Model.algorithm_from_name_and_task(self.algorithm_name, self.project.task)
                 self._algorithm = algorithm(**self.hyperparams)
-                if len(self.snapshot.y_column_name) > 1:
-                    if self.project.task == "regression" and self.algorithm_name in [
+                if (
+                    len(self.snapshot.y_column_name) > 1
+                    and self.project.task == "regression"
+                    and self.algorithm_name
+                    in [
                         "bayesian_ridge",
                         "automatic_relevance_determination",
                         "stochastic_gradient_descent",
@@ -857,8 +846,9 @@ class Model(object):
                         "ada_boost",
                         "gradient_boosting_trees",
                         "lightgbm",
-                    ]:
-                        self._algorithm = sklearn.multioutput.MultiOutputRegressor(self._algorithm)
+                    ]
+                ):
+                    self._algorithm = sklearn.multioutput.MultiOutputRegressor(self._algorithm)
 
         return self._algorithm
 
@@ -1061,7 +1051,7 @@ def train(
         snapshot = project.last_snapshot
         if snapshot is None:
             raise PgMLException(
-                f"You must pass a `relation_name` and `y_column_name` to snapshot the first time you train a model."
+                "You must pass a `relation_name` and `y_column_name` to snapshot the first time you train a model."
             )
         if y_column_name is not None and y_column_name != [None] and y_column_name != snapshot.y_column_name:
             raise PgMLException(
@@ -1082,12 +1072,11 @@ def train(
     model = Model.create(project, snapshot, algorithm_name, hyperparams, search, search_params, search_args)
     model.fit(snapshot)
 
-    # Deployment
     if (
-        project.deployed_model is None
-        or project.deployed_model.metrics[project.key_metric_name] < model.metrics[project.key_metric_name]
+        project.deployed_model is not None
+        and project.deployed_model.metrics[project.key_metric_name]
+        >= model.metrics[project.key_metric_name]
     ):
-        model.deploy("new_score")
-        return "deployed"
-    else:
         return "not deployed"
+    model.deploy("new_score")
+    return "deployed"

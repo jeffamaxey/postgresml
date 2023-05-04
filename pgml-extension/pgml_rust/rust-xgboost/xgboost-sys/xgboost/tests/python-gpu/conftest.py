@@ -26,7 +26,7 @@ def setup_rmm_pool(request, pytestconfig):
 def local_cuda_cluster(request, pytestconfig):
     kwargs = {}
     if hasattr(request, 'param'):
-        kwargs.update(request.param)
+        kwargs |= request.param
     if pytestconfig.getoption('--use-rmm-pool'):
         if not has_rmm():
             raise ImportError('The --use-rmm-pool option requires the RMM package')

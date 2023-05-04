@@ -45,9 +45,7 @@ def make_categorical(
     for col in df.columns:
         df[col] = df[col].cat.set_categories(categories)
 
-    if onehot:
-        return pd.get_dummies(df), label
-    return df, label
+    return (pd.get_dummies(df), label) if onehot else (df, label)
 
 
 def main() -> None:

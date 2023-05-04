@@ -19,11 +19,7 @@ class RequestsHandler(logging.Handler):
 
     def emit(self, record):
         """Send the log records to the appropriate destination."""
-        if (record.levelno is None or record.levelno <= 10) and False:
-            plpy.debug(record.getMessage())
-        elif record.levelno <= 20 and False:
-            plpy.info(record.getMessage())
-        elif record.levelno <= 30:
+        if record.levelno <= 30:
             plpy.warning(record.getMessage())
         elif record.levelno <= 40:
             plpy.error(record.getMessage())

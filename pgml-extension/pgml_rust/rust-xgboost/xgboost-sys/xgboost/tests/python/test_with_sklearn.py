@@ -516,7 +516,7 @@ def run_sklearn_api(booster, error, n_est):
 
     preds = classifier.predict(te_d)
     labels = te_l
-    err = sum([1 for p, l in zip(preds, labels) if p != l]) * 1.0 / len(te_l)
+    err = sum(1 for p, l in zip(preds, labels) if p != l) * 1.0 / len(te_l)
     assert err < error
 
 
@@ -584,7 +584,7 @@ def test_sklearn_nfolds_cv():
                  folds=skf, seed=seed, as_pandas=True)
     cv3 = xgb.cv(params, dm, num_boost_round=10, nfold=nfolds,
                  stratified=True, seed=seed, as_pandas=True)
-    assert cv1.shape[0] == cv2.shape[0] and cv2.shape[0] == cv3.shape[0]
+    assert cv1.shape[0] == cv2.shape[0] == cv3.shape[0]
     assert cv2.iloc[-1, 0] == cv3.iloc[-1, 0]
 
 
@@ -1011,10 +1011,7 @@ def test_pandas_input():
     X = X.reshape(kRows, kCols)
 
     df = pd.DataFrame(X)
-    feature_names = []
-    for i in range(1, kCols):
-        feature_names += ['k'+str(i)]
-
+    feature_names = [f'k{str(i)}' for i in range(1, kCols)]
     df.columns = ['status'] + feature_names
 
     target = df['status']
@@ -1064,10 +1061,9 @@ def run_feature_weights(X, y, fw, tree_method, model=xgb.XGBRegressor):
                     splits[tree.split_index(n)] += 1
 
         od = collections.OrderedDict(sorted(splits.items()))
-        tuples = [(k, v) for k, v in od.items()]
+        tuples = list(od.items())
         k, v = list(zip(*tuples))
-        w = np.polyfit(k, v, deg=1)
-        return w
+        return np.polyfit(k, v, deg=1)
 
 
 @pytest.mark.parametrize("tree_method", ["approx", "hist"])

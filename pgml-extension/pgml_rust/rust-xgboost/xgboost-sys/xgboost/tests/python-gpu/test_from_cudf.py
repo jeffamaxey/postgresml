@@ -271,7 +271,7 @@ class IterForDMatrixTest(xgb.core.DataIter):
         if categorical:
             self._data = []
             self._labels = []
-            for i in range(self.BATCHES):
+            for _ in range(self.BATCHES):
                 X, y = tm.make_categorical(self.ROWS_PER_BATCH, 4, 13, False)
                 self._data.append(cudf.from_pandas(X))
                 self._labels.append(y)

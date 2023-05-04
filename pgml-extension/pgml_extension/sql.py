@@ -13,10 +13,7 @@ def q(obj):
     elif obj is None:
         return "NULL"
     elif type(obj) in [bool, numpy.bool_]:
-        if obj:
-            return "TRUE"
-        else:
-            return "FALSE"
+        return "TRUE" if obj else "FALSE"
     elif type(obj) in [int, float, numpy.int64, numpy.float64]:
         return str(obj)
 
@@ -26,4 +23,4 @@ def q(obj):
 def c(column_name):
     if column_name[0] == '"' and column_name[-1] == '"':
         return column_name
-    return '"' + column_name + '"'
+    return f'"{column_name}"'

@@ -100,8 +100,8 @@ class TestTreeMethod:
     def test_hist_categorical(self):
         # hist must be same as exact on all-categorial data
         dpath = 'demo/data/'
-        ag_dtrain = xgb.DMatrix(dpath + 'agaricus.txt.train')
-        ag_dtest = xgb.DMatrix(dpath + 'agaricus.txt.test')
+        ag_dtrain = xgb.DMatrix(f'{dpath}agaricus.txt.train')
+        ag_dtest = xgb.DMatrix(f'{dpath}agaricus.txt.test')
         ag_param = {'max_depth': 2,
                     'tree_method': 'hist',
                     'eta': 1,
@@ -177,7 +177,10 @@ class TestTreeMethod:
         n_cat = 100
         n = 5
         X = pd.Series(
-            ["".join(choice(ascii_lowercase) for i in range(3)) for i in range(n_cat)],
+            [
+                "".join(choice(ascii_lowercase) for _ in range(3))
+                for _ in range(n_cat)
+            ],
             dtype="category",
         )[:n].to_frame()
 

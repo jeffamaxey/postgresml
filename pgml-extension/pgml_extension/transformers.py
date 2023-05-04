@@ -89,11 +89,7 @@ class Model(BaseModel):
                     with open(file["path"], mode="ab") as handle:
                         handle.write(file["data"])
 
-            if os.path.exists(self.path):
-                source = self.path
-            else:
-                source = self.algorithm_name
-
+            source = self.path if os.path.exists(self.path) else self.algorithm_name
             if source is None or source == "":
                 pipeline = transformers.pipeline(self.task)
                 self._algorithm = {
@@ -200,10 +196,10 @@ class Model(BaseModel):
         if os.path.isdir(self.path):
             shutil.rmtree(self.path, ignore_errors=True)
         trainer.save_model()
+        max_size = 100_000_000
         for filename in os.listdir(self.path):
             path = os.path.join(self.path, filename)
             part = 0
-            max_size = 100_000_000
             with open(path, mode="rb") as file:
                 while True:
                     data = file.read(max_size)
@@ -226,7 +222,7 @@ class Model(BaseModel):
         max_summary_length = self.algorithm["max_summary_length"]
 
         def preprocess_function(examples):
-            inputs = [doc for doc in examples[feature]]
+            inputs = list(examples[feature])
             model_inputs = self.tokenizer(inputs, max_length=max_input_length, truncation=True)
 
             with self.tokenizer.as_target_tokenizer():
@@ -336,7 +332,7 @@ class Model(BaseModel):
         label = self.snapshot.y_column_name[0]
 
         all_preds = []
-        all_labels = [d for d in dataset[label]]
+        all_labels = list(dataset[label])
 
         batch_size = self.hyperparams["per_device_eval_batch_size"]
         batches = int(math.ceil(len(dataset) / batch_size))
@@ -390,13 +386,11 @@ class Model(BaseModel):
                 result = self.model(**tokens).logits.to("cpu")
                 logits = torch.cat((logits, result), 0)
 
-        metrics = {}
-
         y_pred = logits.argmax(-1)
         y_prob = torch.nn.functional.softmax(logits, dim=-1)
         y_test = numpy.array(dataset[label]).flatten()
 
-        metrics["mean_squared_error"] = mean_squared_error(y_test, y_pred)
+        metrics = {"mean_squared_error": mean_squared_error(y_test, y_pred)}
         metrics["r2"] = r2_score(y_test, y_pred)
         metrics["f1"] = f1_score(y_test, y_pred, average="weighted")
         metrics["precision"] = precision_score(y_test, y_pred, average="weighted")
@@ -537,11 +531,11 @@ class Model(BaseModel):
         answer_start = torch.argmax(outputs[0])  # get the most likely beginning of answer with the argmax of the score
         answer_end = torch.argmax(outputs[1]) + 1
 
-        answer = self.tokenizer.convert_tokens_to_string(
-            self.tokenizer.convert_ids_to_tokens(inputs["input_ids"][0][answer_start:answer_end])
+        return self.tokenizer.convert_tokens_to_string(
+            self.tokenizer.convert_ids_to_tokens(
+                inputs["input_ids"][0][answer_start:answer_end]
+            )
         )
-
-        return answer
 
     def generate_summarization(self, data: list):
         all_preds = []
@@ -625,7 +619,7 @@ def tune(
         snapshot = project.last_snapshot
         if snapshot is None:
             raise PgMLException(
-                f"You must pass a `relation_name` and `y_column_name` to snapshot the first time you train a model."
+                "You must pass a `relation_name` and `y_column_name` to snapshot the first time you train a model."
             )
         if y_column_name is not None and y_column_name != [None] and y_column_name != snapshot.y_column_name:
             raise PgMLException(
@@ -636,17 +630,16 @@ def tune(
 
     # Model
     if model_name is None:
-        raise PgMLException(f"You must pass a `model_name` to fine tune.")
+        raise PgMLException("You must pass a `model_name` to fine tune.")
 
     model = Model.create(project, snapshot, model_name, hyperparams, search, search_params, search_args)
     model.fit(snapshot)
 
-    # Deployment
     if (
-        project.deployed_model is None
-        or project.deployed_model.metrics[project.key_metric_name] < model.metrics[project.key_metric_name]
+        project.deployed_model is not None
+        and project.deployed_model.metrics[project.key_metric_name]
+        >= model.metrics[project.key_metric_name]
     ):
-        model.deploy("new_score")
-        return "deployed"
-    else:
         return "not deployed"
+    model.deploy("new_score")
+    return "deployed"

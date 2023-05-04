@@ -69,13 +69,10 @@ try:
         '''Label encoder with JSON serialization methods.'''
         def to_json(self):
             '''Returns a JSON compatible dictionary'''
-            meta = {}
-            for k, v in self.__dict__.items():
-                if isinstance(v, np.ndarray):
-                    meta[k] = v.tolist()
-                else:
-                    meta[k] = v
-            return meta
+            return {
+                k: v.tolist() if isinstance(v, np.ndarray) else v
+                for k, v in self.__dict__.items()
+            }
 
         def from_json(self, doc):
             # pylint: disable=attribute-defined-outside-init

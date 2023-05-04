@@ -31,26 +31,26 @@ if not git_branch:
     git_branch = [x for x in git_branch if 'HEAD' not in x]
 else:
     git_branch = [git_branch]
-print('git_branch = {}'.format(git_branch[0]))
+print(f'git_branch = {git_branch[0]}')
 
 try:
     filename, _ = urllib.request.urlretrieve(
-        'https://s3-us-west-2.amazonaws.com/xgboost-docs/{}.tar.bz2'.format(
-            git_branch[0]))
+        f'https://s3-us-west-2.amazonaws.com/xgboost-docs/{git_branch[0]}.tar.bz2'
+    )
     call(
-        'if [ -d tmp ]; then rm -rf tmp; fi; mkdir -p tmp/jvm; cd tmp/jvm; tar xvf {}'
-        .format(filename),
-        shell=True)
+        f'if [ -d tmp ]; then rm -rf tmp; fi; mkdir -p tmp/jvm; cd tmp/jvm; tar xvf {filename}',
+        shell=True,
+    )
 except HTTPError:
     print('JVM doc not found. Skipping...')
 try:
     filename, _ = urllib.request.urlretrieve(
-        'https://s3-us-west-2.amazonaws.com/xgboost-docs/doxygen/{}.tar.bz2'.
-        format(git_branch[0]))
+        f'https://s3-us-west-2.amazonaws.com/xgboost-docs/doxygen/{git_branch[0]}.tar.bz2'
+    )
     call(
-        'mkdir -p tmp/dev; cd tmp/dev; tar xvf {}; mv doc_doxygen/html/* .; rm -rf doc_doxygen'
-        .format(filename),
-        shell=True)
+        f'mkdir -p tmp/dev; cd tmp/dev; tar xvf {filename}; mv doc_doxygen/html/* .; rm -rf doc_doxygen',
+        shell=True,
+    )
 except HTTPError:
     print('C API doc not found. Skipping...')
 
@@ -66,8 +66,8 @@ sys.path.insert(0, curr_path)
 
 # General information about the project.
 project = u'xgboost'
-author = u'%s developers' % project
-copyright = u'2021, %s' % author
+author = f'{project} developers'
+copyright = f'2021, {author}'
 github_doc_root = 'https://github.com/dmlc/xgboost/tree/master/doc/'
 
 os.environ['XGBOOST_BUILD_DOC'] = '1'
@@ -190,7 +190,7 @@ html_sidebars = {
 html_static_path = ['_static']
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = project + 'doc'
+htmlhelp_basename = f'{project}doc'
 
 # -- Options for LaTeX output ---------------------------------------------
 latex_elements = {
@@ -199,9 +199,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
-latex_documents = [
-  (master_doc, '%s.tex' % project, project, author, 'manual'),
-]
+latex_documents = [(master_doc, f'{project}.tex', project, author, 'manual')]
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3.6", None),
@@ -218,11 +216,11 @@ intersphinx_mapping = {
 def run_doxygen(folder):
     """Run the doxygen make command in the designated folder."""
     try:
-        retcode = subprocess.call("cd %s; make doxygen" % folder, shell=True)
+        retcode = subprocess.call(f"cd {folder}; make doxygen", shell=True)
         if retcode < 0:
-            sys.stderr.write("doxygen terminated by signal %s" % (-retcode))
+            sys.stderr.write(f"doxygen terminated by signal {-retcode}")
     except OSError as e:
-        sys.stderr.write("doxygen execution failed: %s" % e)
+        sys.stderr.write(f"doxygen execution failed: {e}")
 
 
 def generate_doxygen_xml(app):

@@ -218,7 +218,7 @@ class TestPandas:
         set_base_margin_info(pd.DataFrame, xgb.DMatrix, "hist")
 
     def test_cv_as_pandas(self):
-        dm = xgb.DMatrix(dpath + 'agaricus.txt.train')
+        dm = xgb.DMatrix(f'{dpath}agaricus.txt.train')
         params = {'max_depth': 2, 'eta': 1, 'verbosity': 0,
                   'objective': 'binary:logistic', 'eval_metric': 'error'}
 

@@ -273,20 +273,33 @@ def get_sparse():
 def get_mq2008(dpath):
     from sklearn.datasets import load_svmlight_files
 
-    src = 'https://s3-us-west-2.amazonaws.com/xgboost-examples/MQ2008.zip'
-    target = dpath + '/MQ2008.zip'
+    target = f'{dpath}/MQ2008.zip'
     if not os.path.exists(target):
+        src = 'https://s3-us-west-2.amazonaws.com/xgboost-examples/MQ2008.zip'
         urllib.request.urlretrieve(url=src, filename=target)
 
     with zipfile.ZipFile(target, 'r') as f:
         f.extractall(path=dpath)
 
-    (x_train, y_train, qid_train, x_test, y_test, qid_test,
-     x_valid, y_valid, qid_valid) = load_svmlight_files(
-         (dpath + "MQ2008/Fold1/train.txt",
-          dpath + "MQ2008/Fold1/test.txt",
-          dpath + "MQ2008/Fold1/vali.txt"),
-         query_id=True, zero_based=False)
+    (
+        x_train,
+        y_train,
+        qid_train,
+        x_test,
+        y_test,
+        qid_test,
+        x_valid,
+        y_valid,
+        qid_valid,
+    ) = load_svmlight_files(
+        (
+            f"{dpath}MQ2008/Fold1/train.txt",
+            f"{dpath}MQ2008/Fold1/test.txt",
+            f"{dpath}MQ2008/Fold1/vali.txt",
+        ),
+        query_id=True,
+        zero_based=False,
+    )
 
     return (x_train, y_train, qid_train, x_test, y_test, qid_test,
             x_valid, y_valid, qid_valid)
@@ -317,9 +330,7 @@ def make_categorical(
     for col in df.columns:
         df[col] = df[col].cat.set_categories(categories)
 
-    if onehot:
-        return pd.get_dummies(df), label
-    return df, label
+    return (pd.get_dummies(df), label) if onehot else (df, label)
 
 
 _unweighted_datasets_strategy = strategies.sampled_from(

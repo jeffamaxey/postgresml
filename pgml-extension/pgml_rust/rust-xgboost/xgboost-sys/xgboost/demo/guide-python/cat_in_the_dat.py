@@ -36,28 +36,24 @@ def load_cat_in_the_dat() -> tuple[pd.DataFrame, pd.Series]:
     df_train = pd.read_csv("./input/cat-in-the-dat/train.csv")
 
     print(
-        "train data set has got {} rows and {} columns".format(
-            df_train.shape[0], df_train.shape[1]
-        )
+        f"train data set has got {df_train.shape[0]} rows and {df_train.shape[1]} columns"
     )
     X = df_train.drop(["target"], axis=1)
     y = df_train["target"]
 
     for i in range(0, 5):
-        X["bin_" + str(i)] = X["bin_" + str(i)].astype("category")
+        X[f"bin_{str(i)}"] = X[f"bin_{str(i)}"].astype("category")
 
     for i in range(0, 5):
-        X["nom_" + str(i)] = X["nom_" + str(i)].astype("category")
+        X[f"nom_{str(i)}"] = X[f"nom_{str(i)}"].astype("category")
 
     for i in range(5, 10):
-        X["nom_" + str(i)] = X["nom_" + str(i)].apply(int, base=16)
+        X[f"nom_{str(i)}"] = X[f"nom_{str(i)}"].apply(int, base=16)
 
     for i in range(0, 6):
-        X["ord_" + str(i)] = X["ord_" + str(i)].astype("category")
+        X[f"ord_{str(i)}"] = X[f"ord_{str(i)}"].astype("category")
 
-    print(
-        "train data set has got {} rows and {} columns".format(X.shape[0], X.shape[1])
-    )
+    print(f"train data set has got {X.shape[0]} rows and {X.shape[1]} columns")
     return X, y
 
 

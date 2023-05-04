@@ -14,9 +14,7 @@ def test_rabit_tracker():
     tracker = RabitTracker(host_ip='127.0.0.1', n_workers=1)
     tracker.start(1)
     worker_env = tracker.worker_envs()
-    rabit_env = []
-    for k, v in worker_env.items():
-        rabit_env.append(f"{k}={v}".encode())
+    rabit_env = [f"{k}={v}".encode() for k, v in worker_env.items()]
     xgb.rabit.init(rabit_env)
     ret = xgb.rabit.broadcast('test1234', 0)
     assert str(ret) == 'test1234'
@@ -77,7 +75,7 @@ def test_rank_assignment() -> None:
             rank = xgb.rabit.get_rank()
             # As long as the number of workers is lesser than 10, rank and worker id
             # should be the same
-            assert rank == int(matched.group(1))
+            assert rank == int(matched[1])
 
     with LocalCluster(n_workers=8) as cluster:
         with Client(cluster) as client:

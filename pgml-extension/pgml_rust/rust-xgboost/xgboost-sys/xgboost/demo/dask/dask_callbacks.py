@@ -27,10 +27,7 @@ class CustomEarlyStopping(xgb.callback.TrainingCallback):
         self.maximize = maximize
         self.seed = seed
         self.rng = np.random.default_rng(seed=seed)
-        if maximize:
-            self.better = lambda x, y: x > y
-        else:
-            self.better = lambda x, y: x < y
+        self.better = (lambda x, y: x > y) if maximize else (lambda x, y: x < y)
 
     def after_iteration(self, model, epoch, evals_log):
         metric_history = evals_log[self.validation_set][self.target_metric]
@@ -46,10 +43,7 @@ class CustomEarlyStopping(xgb.callback.TrainingCallback):
             "The validation metric went into the wrong direction. "
             + f"Stopping training with probability {1 - p}..."
         )
-        if go_backward:
-            return False  # continue training
-        else:
-            return True  # stop training
+        return not go_backward
 
 
 def main(client):

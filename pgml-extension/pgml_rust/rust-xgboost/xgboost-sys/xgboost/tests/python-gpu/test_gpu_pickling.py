@@ -17,7 +17,7 @@ model_path = './model.pkl'
 
 def build_dataset():
     N = 10
-    x = np.linspace(0, N*N, N*N)
+    x = np.linspace(0, N**2, N**2)
     x = x.reshape((N, N))
     y = np.linspace(0, N, N)
     return x, y
@@ -53,13 +53,7 @@ class TestPickling:
             command += ' '
 
         cuda_environment = {'CUDA_VISIBLE_DEVICES': '-1'}
-        env = os.environ.copy()
-        # Passing new_environment directly to `env' argument results
-        # in failure on Windows:
-        #    Fatal Python error: _Py_HashRandomization_Init: failed to
-        #    get random numbers to initialize Python
-        env.update(cuda_environment)
-
+        env = os.environ | cuda_environment
         # Load model in a CPU only environment.
         status = subprocess.call(command, env=env, shell=True)
         assert status == 0
@@ -96,8 +90,7 @@ class TestPickling:
         model_path = 'model.pkl'
         save_pickle(bst, model_path)
         cuda_environment = {'CUDA_VISIBLE_DEVICES': '0'}
-        env = os.environ.copy()
-        env.update(cuda_environment)
+        env = os.environ | cuda_environment
         args = self.args_template.copy()
         args.append(
             "./tests/python-gpu/"
@@ -126,9 +119,7 @@ class TestPickling:
             "load_pickle.py::TestLoadPickle::test_predictor_type_is_auto")
 
         cuda_environment = {'CUDA_VISIBLE_DEVICES': '-1'}
-        env = os.environ.copy()
-        env.update(cuda_environment)
-
+        env = os.environ | cuda_environment
         # Load model in a CPU only environment.
         status = subprocess.call(args, env=env)
         assert status == 0
@@ -176,8 +167,7 @@ class TestPickling:
 
     def test_training_on_cpu_only_env(self):
         cuda_environment = {'CUDA_VISIBLE_DEVICES': '-1'}
-        env = os.environ.copy()
-        env.update(cuda_environment)
+        env = os.environ | cuda_environment
         args = self.args_template.copy()
         args.append(
             "./tests/python-gpu/"

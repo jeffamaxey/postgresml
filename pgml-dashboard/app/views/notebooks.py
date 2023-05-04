@@ -193,33 +193,7 @@ def remove_notebook_cell(request, notebook_pk, cell_pk):
     """Delete a notebook cell."""
     cell = get_object_or_404(NotebookCell, pk=cell_pk, notebook__pk=notebook_pk)
 
-    # Actually delete the cell.
-    if request.POST.get("confirm"):
-        cell.deleted_at = timezone.now()
-        cell.save()
-
-        # Re-order cells after a delete.
-        notebook = get_object_or_404(Notebook, pk=notebook_pk)
-        cells = notebook.notebookcell_set.order_by("cell_number").filter(deleted_at__isnull=True)
-        cell_number = 1
-        for c in cells:
-            c.cell_number = cell_number
-            c.save()
-
-            cell_number += 1
-
-        return render(
-            request,
-            "notebooks/cell.html",
-            {
-                "cell": cell,
-                "notebook": cell.notebook,
-                "bust_cache": time.time(),
-            },
-        )
-
-    # Leave it alone.
-    else:
+    if not request.POST.get("confirm"):
         return render(
             request,
             "notebooks/undo.html",
@@ -229,6 +203,25 @@ def remove_notebook_cell(request, notebook_pk, cell_pk):
                 "bust_cache": time.time(),
             },
         )
+    cell.deleted_at = timezone.now()
+    cell.save()
+
+    # Re-order cells after a delete.
+    notebook = get_object_or_404(Notebook, pk=notebook_pk)
+    cells = notebook.notebookcell_set.order_by("cell_number").filter(deleted_at__isnull=True)
+    for cell_number, c in enumerate(cells, start=1):
+        c.cell_number = cell_number
+        c.save()
+
+    return render(
+        request,
+        "notebooks/cell.html",
+        {
+            "cell": cell,
+            "notebook": cell.notebook,
+            "bust_cache": time.time(),
+        },
+    )
 
 
 def reset_notebook(request, pk):

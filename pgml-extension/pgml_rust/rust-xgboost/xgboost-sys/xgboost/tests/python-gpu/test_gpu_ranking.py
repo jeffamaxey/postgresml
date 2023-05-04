@@ -30,12 +30,25 @@ class TestRanking:
             with zipfile.ZipFile(target, 'r') as f:
                 f.extractall(path=cls.dpath)
 
-        (x_train, y_train, qid_train, x_test, y_test, qid_test,
-         x_valid, y_valid, qid_valid) = load_svmlight_files(
-            (cls.dpath + "MQ2008/Fold1/train.txt",
-             cls.dpath + "MQ2008/Fold1/test.txt",
-             cls.dpath + "MQ2008/Fold1/vali.txt"),
-            query_id=True, zero_based=False)
+        (
+            x_train,
+            y_train,
+            qid_train,
+            x_test,
+            y_test,
+            qid_test,
+            x_valid,
+            y_valid,
+            qid_valid,
+        ) = load_svmlight_files(
+            (
+                f"{cls.dpath}MQ2008/Fold1/train.txt",
+                f"{cls.dpath}MQ2008/Fold1/test.txt",
+                f"{cls.dpath}MQ2008/Fold1/vali.txt",
+            ),
+            query_id=True,
+            zero_based=False,
+        )
         # instantiate the matrices
         cls.dtrain = xgboost.DMatrix(x_train, y_train)
         cls.dvalid = xgboost.DMatrix(x_valid, y_valid)

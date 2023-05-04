@@ -18,10 +18,7 @@ rng = np.random.RandomState(1994)
 def set_base_margin_info(DType, DMatrixT, tm: str):
     rng = np.random.default_rng()
     X = DType(rng.normal(0, 1.0, size=100).astype(np.float32).reshape(50, 2))
-    if hasattr(X, "iloc"):
-        y = X.iloc[:, 0]
-    else:
-        y = X[:, 0]
+    y = X.iloc[:, 0] if hasattr(X, "iloc") else X[:, 0]
     base_margin = X
     # no error at set
     Xy = DMatrixT(X, y, base_margin=base_margin)
@@ -250,7 +247,7 @@ class TestDMatrix:
 
             bst = xgb.train(params, dm, num_boost_round=10)
             scores = bst.get_fscore()
-            assert list(sorted(k for k in scores)) == features
+            assert list(sorted(iter(scores))) == features
 
             dummy = np.random.randn(5, 5)
             dm = xgb.DMatrix(dummy, feature_names=features)
@@ -279,7 +276,7 @@ class TestDMatrix:
             assert m0.feature_types == m1.feature_types
 
     def test_get_info(self):
-        dtrain = xgb.DMatrix(dpath + 'agaricus.txt.train')
+        dtrain = xgb.DMatrix(f'{dpath}agaricus.txt.train')
         dtrain.get_float_info('label')
         dtrain.get_float_info('weight')
         dtrain.get_float_info('base_margin')
@@ -428,7 +425,7 @@ class TestDMatrix:
     def test_uri_categorical(self):
         path = os.path.join(dpath, 'agaricus.txt.train')
         feature_types = ["q"] * 5 + ["c"] + ["q"] * 120
-        Xy = xgb.DMatrix(path + "?indexing_mode=1", feature_types=feature_types)
+        Xy = xgb.DMatrix(f"{path}?indexing_mode=1", feature_types=feature_types)
         np.testing.assert_equal(np.array(Xy.feature_types), np.array(feature_types))
 
     def test_base_margin(self):

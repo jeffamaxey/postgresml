@@ -36,8 +36,8 @@ class TestModels:
         param = {'verbosity': 0, 'objective': 'binary:logistic',
                  'booster': 'gblinear', 'alpha': 0.0001, 'lambda': 1,
                  'nthread': 1}
-        dtrain = xgb.DMatrix(dpath + 'agaricus.txt.train')
-        dtest = xgb.DMatrix(dpath + 'agaricus.txt.test')
+        dtrain = xgb.DMatrix(f'{dpath}agaricus.txt.train')
+        dtest = xgb.DMatrix(f'{dpath}agaricus.txt.test')
         watchlist = [(dtest, 'eval'), (dtrain, 'train')]
         num_round = 4
         bst = xgb.train(param, dtrain, num_round, watchlist)
@@ -49,8 +49,8 @@ class TestModels:
         assert err < 0.2
 
     def test_dart(self):
-        dtrain = xgb.DMatrix(dpath + 'agaricus.txt.train')
-        dtest = xgb.DMatrix(dpath + 'agaricus.txt.test')
+        dtrain = xgb.DMatrix(f'{dpath}agaricus.txt.train')
+        dtest = xgb.DMatrix(f'{dpath}agaricus.txt.test')
         param = {'max_depth': 5, 'objective': 'binary:logistic',
                  'eval_metric': 'logloss', 'booster': 'dart', 'verbosity': 1}
         # specify validations set to watch performance
@@ -116,7 +116,7 @@ class TestModels:
 
     def test_boost_from_prediction(self):
         # Re-construct dtrain here to avoid modification
-        margined = xgb.DMatrix(dpath + 'agaricus.txt.train')
+        margined = xgb.DMatrix(f'{dpath}agaricus.txt.train')
         bst = xgb.train({'tree_method': 'hist'}, margined, 1)
         predt_0 = bst.predict(margined, output_margin=True)
         margined.set_base_margin(predt_0)
@@ -124,13 +124,13 @@ class TestModels:
         predt_1 = bst.predict(margined)
 
         assert np.any(np.abs(predt_1 - predt_0) > 1e-6)
-        dtrain = xgb.DMatrix(dpath + 'agaricus.txt.train')
+        dtrain = xgb.DMatrix(f'{dpath}agaricus.txt.train')
         bst = xgb.train({'tree_method': 'hist'}, dtrain, 2)
         predt_2 = bst.predict(dtrain)
         assert np.all(np.abs(predt_2 - predt_1) < 1e-6)
 
     def test_boost_from_existing_model(self):
-        X = xgb.DMatrix(dpath + 'agaricus.txt.train')
+        X = xgb.DMatrix(f'{dpath}agaricus.txt.train')
         booster = xgb.train({'tree_method': 'hist'}, X, num_boost_round=4)
         assert booster.num_boosted_rounds() == 4
         booster = xgb.train({'tree_method': 'hist'}, X, num_boost_round=4,
@@ -150,8 +150,8 @@ class TestModels:
             'objective': 'reg:logistic',
             "tree_method": tree_method
         }
-        dtrain = xgb.DMatrix(dpath + 'agaricus.txt.train')
-        dtest = xgb.DMatrix(dpath + 'agaricus.txt.test')
+        dtrain = xgb.DMatrix(f'{dpath}agaricus.txt.train')
+        dtest = xgb.DMatrix(f'{dpath}agaricus.txt.test')
         watchlist = [(dtest, 'eval'), (dtrain, 'train')]
         num_round = 10
 
@@ -197,12 +197,16 @@ class TestModels:
         self.run_custom_objective()
 
     def test_multi_eval_metric(self):
-        dtrain = xgb.DMatrix(dpath + 'agaricus.txt.train')
-        dtest = xgb.DMatrix(dpath + 'agaricus.txt.test')
+        dtrain = xgb.DMatrix(f'{dpath}agaricus.txt.train')
+        dtest = xgb.DMatrix(f'{dpath}agaricus.txt.test')
         watchlist = [(dtest, 'eval'), (dtrain, 'train')]
-        param = {'max_depth': 2, 'eta': 0.2, 'verbosity': 1,
-                 'objective': 'binary:logistic'}
-        param['eval_metric'] = ["auc", "logloss", 'error']
+        param = {
+            'max_depth': 2,
+            'eta': 0.2,
+            'verbosity': 1,
+            'objective': 'binary:logistic',
+            'eval_metric': ["auc", "logloss", 'error'],
+        }
         evals_result = {}
         bst = xgb.train(param, dtrain, 4, watchlist, evals_result=evals_result)
         assert isinstance(bst, xgb.core.Booster)
@@ -220,7 +224,7 @@ class TestModels:
             param['scale_pos_weight'] = ratio
             return (dtrain, dtest, param)
 
-        dtrain = xgb.DMatrix(dpath + 'agaricus.txt.train')
+        dtrain = xgb.DMatrix(f'{dpath}agaricus.txt.train')
         xgb.cv(param, dtrain, num_round, nfold=5,
                metrics={'auc'}, seed=0, fpreproc=fpreproc)
 
@@ -228,7 +232,7 @@ class TestModels:
         param = {'max_depth': 2, 'eta': 1, 'verbosity': 0,
                  'objective': 'binary:logistic'}
         num_round = 2
-        dtrain = xgb.DMatrix(dpath + 'agaricus.txt.train')
+        dtrain = xgb.DMatrix(f'{dpath}agaricus.txt.train')
         xgb.cv(param, dtrain, num_round, nfold=5,
                metrics={'error'}, seed=0, show_stdv=False)
 
@@ -275,7 +279,7 @@ class TestModels:
             pytest.skip(tm.no_ubjson()["reason"])
 
         loc = locale.getpreferredencoding(False)
-        model_path = 'test_model_json_io.' + ext
+        model_path = f'test_model_json_io.{ext}'
         j_model = json_model(model_path, parameters)
         assert isinstance(j_model['learner'], dict)
 
@@ -337,7 +341,7 @@ class TestModels:
         os.remove(model_path)
 
         try:
-            dtrain = xgb.DMatrix(dpath + 'agaricus.txt.train')
+            dtrain = xgb.DMatrix(f'{dpath}agaricus.txt.train')
             xgb.train({'objective': 'foo'}, dtrain, num_boost_round=1)
         except ValueError as e:
             e_str = str(e)
@@ -349,10 +353,9 @@ class TestModels:
             objectives = [s.split(': ')[1] for s in splited]
             j_objectives = schema['properties']['learner']['properties'][
                 'objective']['oneOf']
-            objectives_from_schema = set()
-            for j_obj in j_objectives:
-                objectives_from_schema.add(
-                    j_obj['properties']['name']['const'])
+            objectives_from_schema = {
+                j_obj['properties']['name']['const'] for j_obj in j_objectives
+            }
             objectives = set(objectives)
             assert objectives == objectives_from_schema
 
@@ -483,7 +486,7 @@ class TestModels:
         with pytest.raises(ValueError, match=r".*>= 1.*"):
             booster[0:2:0]
 
-        trees = [_ for _ in booster]
+        trees = list(booster)
         assert len(trees) == num_boost_round
 
         with pytest.raises(TypeError):
@@ -567,7 +570,7 @@ class TestModels:
         cols = 10
         X = rng.randn(rows, cols)
         y = rng.randn(rows)
-        feature_names = ["test_feature_" + str(i) for i in range(cols)]
+        feature_names = [f"test_feature_{str(i)}" for i in range(cols)]
         X_pd = pd.DataFrame(X, columns=feature_names)
         X_pd.iloc[:, 3] = X_pd.iloc[:, 3].astype(np.int)
 
@@ -580,7 +583,7 @@ class TestModels:
         assert booster.feature_types == Xy.feature_types
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            path = tmpdir + "model.json"
+            path = f"{tmpdir}model.json"
             booster.save_model(path)
             booster = xgb.Booster()
             booster.load_model(path)

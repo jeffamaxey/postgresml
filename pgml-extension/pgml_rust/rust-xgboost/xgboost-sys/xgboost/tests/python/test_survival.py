@@ -98,7 +98,7 @@ def test_aft_survival_demo_data():
     dists = ['normal', 'logistic', 'extreme']
     for dist in dists:
         params = base_params
-        params.update({'aft_loss_distribution': dist})
+        params['aft_loss_distribution'] = dist
         evals_result = {}
         bst = xgb.train(params, dtrain, num_boost_round=500, evals=[(dtrain, 'train')],
                         evals_result=evals_result)

@@ -98,7 +98,7 @@ class Snapshot(models.Model):
     def table_type(self):
         with connection.cursor() as cursor:
             cursor.execute(
-                f"SELECT pg_size_pretty(pg_total_relation_size(%s))",
+                "SELECT pg_size_pretty(pg_total_relation_size(%s))",
                 [self.snapshot_name],
             )
             return cursor.fetchone()[0]
@@ -108,7 +108,7 @@ class Snapshot(models.Model):
         """How big is the snapshot according to Postgres."""
         with connection.cursor() as cursor:
             cursor.execute(
-                f"SELECT pg_size_pretty(pg_total_relation_size(%s))",
+                "SELECT pg_size_pretty(pg_total_relation_size(%s))",
                 [self.snapshot_name],
             )
             return cursor.fetchone()[0]
@@ -179,9 +179,12 @@ class Notebook(models.Model):
 
     def to_markdown(self):
         """Convert the notebook to markdown so it's easily sharable."""
-        result = []
-        for cell in self.notebookcell_set.filter(deleted_at__isnull=True).order_by("cell_number"):
-            result.append(cell.markdown())
+        result = [
+            cell.markdown()
+            for cell in self.notebookcell_set.filter(
+                deleted_at__isnull=True
+            ).order_by("cell_number")
+        ]
         return "\n\n".join(result)
 
     def reset(self):
@@ -225,10 +228,7 @@ class NotebookCell(models.Model):
     @property
     def html(self):
         """HTML rendering of the cell."""
-        if self.rendering:
-            return mark_safe(self.rendering)
-        else:
-            return self.rendering
+        return mark_safe(self.rendering) if self.rendering else self.rendering
 
     def render(self):
         """Execute the cell and save the result."""
@@ -253,11 +253,10 @@ class NotebookCell(models.Model):
                                     "rows": rows,
                                 },
                             )
-                            results.append(result)
                         else:
                             # Not an error, but the formatting is helpful.
                             result = render_to_string("notebooks/sql_error.html", {"error": str(cursor.statusmessage)})
-                            results.append(result)
+                        results.append(result)
                     except Exception as e:
                         result = render_to_string(
                             "notebooks/sql_error.html",
@@ -272,12 +271,9 @@ class NotebookCell(models.Model):
         elif self.cell_type == NotebookCell.MARKDOWN:
             rendering = markdown.markdown(self.contents, extensions=["extra"])
 
-            self.rendering = '<article class="markdown-body">' + rendering + "</article>"
+            self.rendering = f'<article class="markdown-body">{rendering}</article>'
 
-        elif self.cell_type == NotebookCell.PLAIN_TEXT:
-            self.rendering = self.contents
-
-        elif self.cell_type == NotebookCell.EMPTY:
+        elif self.cell_type in [NotebookCell.PLAIN_TEXT, NotebookCell.EMPTY]:
             self.rendering = self.contents
 
         self.save()

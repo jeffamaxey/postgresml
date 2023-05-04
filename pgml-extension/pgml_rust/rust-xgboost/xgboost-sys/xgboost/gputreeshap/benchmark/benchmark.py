@@ -36,8 +36,7 @@ def train_model(dataset, max_depth, num_rounds):
     dmat = dataset.get_dmat()
     params = {'tree_method': 'gpu_hist', 'max_depth': max_depth, 'eta': 0.01}
     params = dataset.set_params(params)
-    model = xgb.train(params, dmat, num_rounds, [(dmat, 'train')])
-    return model
+    return xgb.train(params, dmat, num_rounds, [(dmat, 'train')])
 
 
 @memory.cache
@@ -57,9 +56,7 @@ def fetch_fashion_mnist():
 def get_model_stats(model):
     depths = []
     for t in model.get_dump():
-        for line in t.splitlines():
-            if "leaf" in line:
-                depths.append(line.count('\t'))
+        depths.extend(line.count('\t') for line in t.splitlines() if "leaf" in line)
     return len(model.get_dump()), len(depths), np.mean(depths)
 
 
@@ -138,12 +135,13 @@ def run_benchmark(args):
         for p in predictors:
             m.xgb_model.set_param({"predictor": p})
             samples = []
-            for i in range(args.niter):
+            for _ in range(args.niter):
                 start = time.perf_counter()
-                if args.interactions:
-                    xgb_shap = m.xgb_model.predict(dtest, pred_interactions=True)
-                else:
-                    xgb_shap = m.xgb_model.predict(dtest, pred_contribs=True)
+                xgb_shap = (
+                    m.xgb_model.predict(dtest, pred_interactions=True)
+                    if args.interactions
+                    else m.xgb_model.predict(dtest, pred_contribs=True)
+                )
                 samples.append(time.perf_counter() - start)
             if p is "gpu_predictor":
                 result_row["gpu_time(s)"] = np.mean(samples)

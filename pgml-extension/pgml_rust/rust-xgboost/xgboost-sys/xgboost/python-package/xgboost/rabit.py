@@ -40,8 +40,7 @@ def get_rank() -> int:
     rank : int
         Rank of current process.
     """
-    ret = _LIB.RabitGetRank()
-    return ret
+    return _LIB.RabitGetRank()
 
 
 def get_world_size() -> int:
@@ -52,14 +51,12 @@ def get_world_size() -> int:
     n : int
         Total number of process.
     """
-    ret = _LIB.RabitGetWorldSize()
-    return ret
+    return _LIB.RabitGetWorldSize()
 
 
 def is_distributed() -> int:
     '''If rabit is distributed.'''
-    is_dist = _LIB.RabitIsDistributed()
-    return is_dist
+    return _LIB.RabitIsDistributed()
 
 
 def tracker_print(msg: Any) -> None:
@@ -220,8 +217,7 @@ def version_number() -> int:
     version : int
         Version number of currently stored model
     """
-    ret = _LIB.RabitVersionNumber()
-    return ret
+    return _LIB.RabitVersionNumber()
 
 
 # initialization script

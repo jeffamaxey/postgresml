@@ -19,7 +19,7 @@ def make_batches(
         rng = cupy.random.RandomState(1994)
     else:
         rng = np.random.RandomState(1994)
-    for i in range(n_batches):
+    for _ in range(n_batches):
         _X = rng.randn(n_samples_per_batch, n_features)
         _y = rng.randn(n_samples_per_batch)
         X.append(_X)

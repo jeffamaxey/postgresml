@@ -62,10 +62,7 @@ class TestLinear:
         note(result)
         # shotgun is non-deterministic, so we relax the test by only using first and last
         # iteration.
-        if len(result) > 2:
-            sampled_result = (result[0], result[-1])
-        else:
-            sampled_result = result
+        sampled_result = (result[0], result[-1]) if len(result) > 2 else result
         assert tm.non_increasing(sampled_result)
 
     @given(parameter_strategy, strategies.integers(10, 50),

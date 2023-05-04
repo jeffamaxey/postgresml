@@ -272,8 +272,8 @@ class TestCallbacks:
         scheduler = xgb.callback.LearningRateScheduler
 
         dpath = os.path.join(tm.PROJECT_ROOT, 'demo/data/')
-        dtrain = xgb.DMatrix(dpath + 'agaricus.txt.train')
-        dtest = xgb.DMatrix(dpath + 'agaricus.txt.test')
+        dtrain = xgb.DMatrix(f'{dpath}agaricus.txt.train')
+        dtest = xgb.DMatrix(f'{dpath}agaricus.txt.test')
         watchlist = [(dtest, 'eval'), (dtrain, 'train')]
         num_round = 4
 
@@ -368,8 +368,7 @@ class TestCallbacks:
                       verbose_eval=False,
                       callbacks=[check_point])
             for i in range(1, 10):
-                assert os.path.exists(
-                    os.path.join(tmpdir, 'model_' + str(i) + '.json'))
+                assert os.path.exists(os.path.join(tmpdir, f'model_{str(i)}.json'))
 
             check_point = xgb.callback.TrainingCheckPoint(directory=tmpdir,
                                                           iterations=1,
@@ -380,14 +379,13 @@ class TestCallbacks:
                       verbose_eval=False,
                       callbacks=[check_point])
             for i in range(1, 10):
-                assert os.path.exists(
-                    os.path.join(tmpdir, 'model_' + str(i) + '.pkl'))
+                assert os.path.exists(os.path.join(tmpdir, f'model_{str(i)}.pkl'))
 
     def test_callback_list(self):
         X, y = tm.get_california_housing()
         m = xgb.DMatrix(X, y)
         callbacks = [xgb.callback.EarlyStopping(rounds=10)]
-        for i in range(4):
+        for _ in range(4):
             xgb.train({'objective': 'reg:squarederror',
                        'eval_metric': 'rmse'}, m,
                       evals=[(m, 'Train')],

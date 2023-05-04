@@ -97,10 +97,7 @@ class TestGPUPredict:
         dtrain = xgb.DMatrix(X_train, label=y_train)
         dtest = xgb.DMatrix(X_test)
 
-        params = {}
-        params["tree_method"] = "gpu_hist"
-
-        params['predictor'] = "gpu_predictor"
+        params = {"tree_method": "gpu_hist", 'predictor': "gpu_predictor"}
         bst_gpu_predict = xgb.train(params, dtrain)
 
         params['predictor'] = "cpu_predictor"
@@ -160,7 +157,7 @@ class TestGPUPredict:
         cp.random.set_random_state(cp_rng)
 
         X = cp.random.randn(rows, cols)
-        missing_idx = [i for i in range(0, cols, 4)]
+        missing_idx = list(range(0, cols, 4))
         X[:, missing_idx] = missing  # set to be missing
         y = cp.random.randn(rows)
 
@@ -194,7 +191,7 @@ class TestGPUPredict:
         X = cp_rng.randn(100, 10000)
         y = cp_rng.randn(100)
 
-        missing_idx = [i for i in range(0, X.shape[1], 16)]
+        missing_idx = list(range(0, X.shape[1], 16))
         X[:, missing_idx] = missing
         reg = xgb.XGBRegressor(tree_method="gpu_hist", n_estimators=8, missing=missing)
         reg.fit(X, y)

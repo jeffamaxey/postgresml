@@ -42,8 +42,7 @@ def latest_hash() -> str:
     "Get latest commit hash."
     ret = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True)
     assert ret.returncode == 0, "Failed to get latest commit hash."
-    commit_hash = ret.stdout.decode("utf-8").strip()
-    return commit_hash
+    return ret.stdout.decode("utf-8").strip()
 
 
 def download_wheels(
@@ -86,8 +85,8 @@ def download_py_packages(branch: str, major: int, minor: int, commit_hash: str) 
 
     branch = branch.split("_")[1]  # release_x.y.z
     dir_URL = PREFIX + branch + "/"
-    src_filename_prefix = "xgboost-" + args.release + "%2B" + commit_hash + "-py3-none-"
-    target_filename_prefix = "xgboost-" + args.release + "-py3-none-"
+    src_filename_prefix = f"xgboost-{args.release}%2B{commit_hash}-py3-none-"
+    target_filename_prefix = f"xgboost-{args.release}-py3-none-"
 
     if not os.path.exists(DIST):
         os.mkdir(DIST)
@@ -118,11 +117,11 @@ def download_r_packages(release: str, branch: str, rc: str, commit: str) -> None
     for plat in platforms:
         url = f"{PREFIX}{branch}/xgboost_r_gpu_{plat}_{commit}.tar.gz"
 
-        if not rc:
-            filename = f"xgboost_r_gpu_{plat}_{release}.tar.gz"
-        else:
-            filename = f"xgboost_r_gpu_{plat}_{release}-{rc}.tar.gz"
-
+        filename = (
+            f"xgboost_r_gpu_{plat}_{release}-{rc}.tar.gz"
+            if rc
+            else f"xgboost_r_gpu_{plat}_{release}.tar.gz"
+        )
         target = os.path.join(dirname, filename)
         retrieve(url=url, filename=target)
         filenames.append(target)
@@ -153,11 +152,11 @@ def main(args: argparse.Namespace) -> None:
         )
         assert rc == "rc"
 
-    release = str(major) + "." + str(minor) + "." + str(patch)
+    release = f"{str(major)}.{str(minor)}.{str(patch)}"
     if args.branch is not None:
         branch = args.branch
     else:
-        branch = "release_" + str(major) + "." + str(minor) + ".0"
+        branch = f"release_{str(major)}.{str(minor)}.0"
 
     git.clean("-xdf")
     git.checkout(branch)

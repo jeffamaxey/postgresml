@@ -105,7 +105,7 @@ def run_with_dask_dataframe(DMatrixT: Type, client: Client) -> None:
     X["inplace_predict"] = series_predictions
 
     has_null = X.isnull().values.any().compute()
-    assert bool(has_null) is False
+    assert not bool(has_null)
 
 
 def run_with_dask_array(DMatrixT: Type, client: Client) -> None:
@@ -151,12 +151,12 @@ def test_categorical(local_cuda_cluster: LocalCUDACluster) -> None:
 
 def to_cp(x: Any, DMatrixT: Type) -> Any:
     import cupy
-    if isinstance(x, np.ndarray) and \
-       DMatrixT is dxgb.DaskDeviceQuantileDMatrix:
-        X = cupy.array(x)
-    else:
-        X = x
-    return X
+    return (
+        cupy.array(x)
+        if isinstance(x, np.ndarray)
+        and DMatrixT is dxgb.DaskDeviceQuantileDMatrix
+        else x
+    )
 
 
 def run_gpu_hist(
@@ -478,7 +478,7 @@ class TestDistributedGPU:
             if os.path.exists(possible_path):
                 exe = possible_path
         assert exe, 'No testxgboost executable found.'
-        test = "--gtest_filter=GPUQuantile." + name
+        test = f"--gtest_filter=GPUQuantile.{name}"
 
         def runit(
             worker_addr: str, rabit_args: List[bytes]

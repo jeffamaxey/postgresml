@@ -6,8 +6,6 @@ try:
     import shap
 except ImportError:
     shap = None
-    pass
-
 pytestmark = pytest.mark.skipif(shap is None, reason="Requires shap package")
 
 

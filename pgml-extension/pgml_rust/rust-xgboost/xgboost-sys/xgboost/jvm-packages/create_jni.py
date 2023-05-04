@@ -32,7 +32,7 @@ def cd(path):
     path = normpath(path)
     cwd = os.getcwd()
     os.chdir(path)
-    print("cd " + path)
+    print(f"cd {path}")
     try:
         yield path
     finally:
@@ -41,7 +41,7 @@ def cd(path):
 
 def maybe_makedirs(path):
     path = normpath(path)
-    print("mkdir -p " + path)
+    print(f"mkdir -p {path}")
     try:
         os.makedirs(path)
     except OSError as e:
@@ -64,10 +64,7 @@ def cp(source, target):
 def normpath(path):
     """Normalize UNIX path to a native path."""
     normalized = os.path.join(*path.split("/"))
-    if os.path.isabs(path):
-        return os.path.abspath("/") + normalized
-    else:
-        return normalized
+    return os.path.abspath("/") + normalized if os.path.isabs(path) else normalized
 
 
 if __name__ == "__main__":
@@ -87,16 +84,8 @@ if __name__ == "__main__":
         build_dir = 'build-gpu' if cli_args.use_cuda == 'ON' else 'build'
         maybe_makedirs(build_dir)
         with cd(build_dir):
-            if sys.platform == "win32":
-                # Force x64 build on Windows.
-                maybe_generator = ' -A x64'
-            else:
-                maybe_generator = ""
-            if sys.platform == "linux":
-                maybe_parallel_build = " -- -j $(nproc)"
-            else:
-                maybe_parallel_build = ""
-
+            maybe_generator = ' -A x64' if sys.platform == "win32" else ""
+            maybe_parallel_build = " -- -j $(nproc)" if sys.platform == "linux" else ""
             if cli_args.log_capi_invocation == 'ON':
                 CONFIG['LOG_CAPI_INVOCATION'] = 'ON'
 
@@ -113,13 +102,13 @@ if __name__ == "__main__":
             # if enviorment set GPU_ARCH_FLAG
             gpu_arch_flag = os.getenv("GPU_ARCH_FLAG", None)
             if gpu_arch_flag is not None:
-                args.append("%s" % gpu_arch_flag)
+                args.append(f"{gpu_arch_flag}")
 
             lib_dir = os.path.join(os.pardir, 'lib')
             if os.path.exists(lib_dir):
                 shutil.rmtree(lib_dir)
             run("cmake .. " + " ".join(args) + maybe_generator)
-            run("cmake --build . --config Release" + maybe_parallel_build)
+            run(f"cmake --build . --config Release{maybe_parallel_build}")
 
         with cd("demo/CLI/regression"):
             run(f'"{sys.executable}" mapfeat.py')
@@ -143,24 +132,24 @@ if __name__ == "__main__":
         "arm64": "aarch64",  # on macOS & Windows ARM 64-bit
         "aarch64": "aarch64"
     }[platform.machine().lower()]
-    output_folder = "{}/src/main/resources/lib/{}/{}".format(xgboost4j, os_folder, arch_folder)
+    output_folder = f"{xgboost4j}/src/main/resources/lib/{os_folder}/{arch_folder}"
     maybe_makedirs(output_folder)
-    cp("../lib/" + library_name, output_folder)
+    cp(f"../lib/{library_name}", output_folder)
 
     print("copying pure-Python tracker")
-    cp("../python-package/xgboost/tracker.py", "{}/src/main/resources".format(xgboost4j))
+    cp("../python-package/xgboost/tracker.py", f"{xgboost4j}/src/main/resources")
 
     print("copying train/test files")
-    maybe_makedirs("{}/src/test/resources".format(xgboost4j_spark))
+    maybe_makedirs(f"{xgboost4j_spark}/src/test/resources")
     with cd("../demo/CLI/regression"):
         run(f'"{sys.executable}" mapfeat.py')
         run(f'"{sys.executable}" mknfold.py machine.txt 1')
 
     for file in glob.glob("../demo/CLI/regression/machine.txt.t*"):
-        cp(file, "{}/src/test/resources".format(xgboost4j_spark))
+        cp(file, f"{xgboost4j_spark}/src/test/resources")
     for file in glob.glob("../demo/data/agaricus.*"):
-        cp(file, "{}/src/test/resources".format(xgboost4j_spark))
+        cp(file, f"{xgboost4j_spark}/src/test/resources")
 
-    maybe_makedirs("{}/src/test/resources".format(xgboost4j))
+    maybe_makedirs(f"{xgboost4j}/src/test/resources")
     for file in glob.glob("../demo/data/agaricus.*"):
-        cp(file, "{}/src/test/resources".format(xgboost4j))
+        cp(file, f"{xgboost4j}/src/test/resources")

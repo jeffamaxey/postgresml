@@ -41,8 +41,7 @@ def _configure_custom_metric(
         raise ValueError(
             "Both `feval` and `custom_metric` are supplied.  Use `custom_metric` instead."
         )
-    eval_metric = custom_metric if custom_metric is not None else feval
-    return eval_metric
+    return custom_metric if custom_metric is not None else feval
 
 
 @_deprecate_positional_args
@@ -226,8 +225,7 @@ class _PackedBooster:
 
     def eval(self, iteration, feval, output_margin):
         '''Iterate through folds for eval'''
-        result = [f.eval(iteration, feval, output_margin) for f in self.cvfolds]
-        return result
+        return [f.eval(iteration, feval, output_margin) for f in self.cvfolds]
 
     def set_attr(self, **kwargs):
         '''Iterate through folds for setting attributes'''
@@ -467,7 +465,7 @@ def cv(params, dtrain, num_boost_round=10, nfold=3, stratified=False, folds=None
         if 'eval_metric' in params:
             params['eval_metric'] = _metrics
     else:
-        params = dict((k, v) for k, v in params.items())
+        params = dict(params.items())
 
     if (not metrics) and 'eval_metric' in params:
         if isinstance(params['eval_metric'], list):
@@ -514,15 +512,15 @@ def cv(params, dtrain, num_boost_round=10, nfold=3, stratified=False, folds=None
         should_break = callbacks.after_iteration(booster, i, dtrain, None)
         res = callbacks.aggregated_cv
         for key, mean, std in res:
-            if key + '-mean' not in results:
-                results[key + '-mean'] = []
-            if key + '-std' not in results:
-                results[key + '-std'] = []
-            results[key + '-mean'].append(mean)
-            results[key + '-std'].append(std)
+            if f'{key}-mean' not in results:
+                results[f'{key}-mean'] = []
+            if f'{key}-std' not in results:
+                results[f'{key}-std'] = []
+            results[f'{key}-mean'].append(mean)
+            results[f'{key}-std'].append(std)
 
         if should_break:
-            for k in results.keys():  # pylint: disable=consider-iterating-dictionary
+            for k in results:  # pylint: disable=consider-iterating-dictionary
                 results[k] = results[k][:(booster.best_iteration + 1)]
             break
     if as_pandas:

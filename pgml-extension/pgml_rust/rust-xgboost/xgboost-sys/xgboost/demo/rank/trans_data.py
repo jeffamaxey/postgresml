@@ -8,33 +8,32 @@ def save_data(group_data,output_feature,output_group):
     for data in group_data:
         # only include nonzero features
         feats = [ p for p in data[2:] if float(p.split(':')[1]) != 0.0 ]
-        output_feature.write(data[0] + " " + " ".join(feats) + "\n")
+        output_feature.write(f"{data[0]} " + " ".join(feats) + "\n")
 
 if __name__ == "__main__":
     if len(sys.argv) != 4:
         print ("Usage: python trans_data.py [Ranksvm Format Input] [Output Feature File] [Output Group File]")
         sys.exit(0)
 
-    fi = open(sys.argv[1])
-    output_feature = open(sys.argv[2],"w")
-    output_group = open(sys.argv[3],"w")
+    with open(sys.argv[1]) as fi:
+        output_feature = open(sys.argv[2],"w")
+        output_group = open(sys.argv[3],"w")
 
-    group_data = []
-    group = ""
-    for line in fi:
-        if not line:
-            break
-        if "#" in line:
-            line = line[:line.index("#")]
-        splits = line.strip().split(" ")
-        if splits[1] != group:
-            save_data(group_data,output_feature,output_group)
-            group_data = []
-        group = splits[1]
-        group_data.append(splits)
+        group_data = []
+        group = ""
+        for line in fi:
+            if not line:
+                break
+            if "#" in line:
+                line = line[:line.index("#")]
+            splits = line.strip().split(" ")
+            if splits[1] != group:
+                save_data(group_data,output_feature,output_group)
+                group_data = []
+            group = splits[1]
+            group_data.append(splits)
 
-    save_data(group_data,output_feature,output_group)
+        save_data(group_data,output_feature,output_group)
 
-    fi.close()
     output_feature.close()
     output_group.close()

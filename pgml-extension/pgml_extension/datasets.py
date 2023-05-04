@@ -123,9 +123,9 @@ def load_digits():
     a = plpy.execute("DROP TABLE IF EXISTS pgml.digits")
     a = plpy.execute("CREATE TABLE pgml.digits (image SMALLINT[][], target INTEGER)")
     a = plpy.execute(f"""COMMENT ON TABLE pgml.digits IS {q(dataset["DESCR"])}""")
+    height = width = 8
     for X, y in zip(dataset["data"], dataset["target"]):
-        height = width = 8
-        image = [[0 for x in range(width)] for y in range(height)]
+        image = [[0 for _ in range(width)] for _ in range(height)]
         for i, x in enumerate(list(X)):
             image[int(i / height)][int(i % width)] = x
         sql_image = "ARRAY[" + ",".join(["ARRAY[" + ",".join("%i" % x for x in row) + "]" for row in image]) + "]"

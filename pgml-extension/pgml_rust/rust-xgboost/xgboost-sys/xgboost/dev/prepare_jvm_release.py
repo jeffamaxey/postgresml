@@ -9,10 +9,7 @@ from contextlib import contextmanager
 def normpath(path):
     """Normalize UNIX path to a native path."""
     normalized = os.path.join(*path.split("/"))
-    if os.path.isabs(path):
-        return os.path.abspath("/") + normalized
-    else:
-        return normalized
+    return os.path.abspath("/") + normalized if os.path.isabs(path) else normalized
 
 def cp(source, target):
     source = normpath(source)
@@ -22,7 +19,7 @@ def cp(source, target):
 
 def maybe_makedirs(path):
     path = normpath(path)
-    print("mkdir -p " + path)
+    print(f"mkdir -p {path}")
     try:
         os.makedirs(path)
     except OSError as e:
@@ -34,7 +31,7 @@ def cd(path):
     path = normpath(path)
     cwd = os.getcwd()
     os.chdir(path)
-    print("cd " + path)
+    print(f"cd {path}")
     try:
         yield path
     finally:

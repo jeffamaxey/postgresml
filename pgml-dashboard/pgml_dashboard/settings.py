@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
+
 from pathlib import Path
 import os
 import mimetypes
@@ -18,8 +19,7 @@ import dotenv
 
 dotenv.load_dotenv()
 
-SENTRY_DSN = os.environ.get("SENTRY_DSN", None)
-if SENTRY_DSN:
+if SENTRY_DSN := os.environ.get("SENTRY_DSN", None):
     import sentry_sdk
 
     sentry_sdk.init(
@@ -169,11 +169,7 @@ if URL_PREFIX:
     if not URL_PREFIX.endswith("/"):
         URL_PREFIX += "/"
 
-if DEBUG:
-    STATIC_URL = "/static/"
-else:
-    STATIC_URL = "/" + URL_PREFIX + "/static/"
-
+STATIC_URL = "/static/" if DEBUG else f"/{URL_PREFIX}/static/"
 STATIC_ROOT = "static"
 
 

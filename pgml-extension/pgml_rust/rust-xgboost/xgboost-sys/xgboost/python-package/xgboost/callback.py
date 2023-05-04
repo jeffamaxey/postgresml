@@ -243,9 +243,9 @@ class CallbackContainer:
             # convert to float
             metric_score = [(n, float(s)) for n, s in metric_score_str]
             self._update_history(metric_score, epoch)
-        ret = any(c.after_iteration(model, epoch, self.history)
-                  for c in self.callbacks)
-        return ret
+        return any(
+            c.after_iteration(model, epoch, self.history) for c in self.callbacks
+        )
 
 
 class LearningRateScheduler(TrainingCallback):
@@ -369,16 +369,10 @@ class EarlyStopping(TrainingCallback):
             # user to decide.
             maximize_metrics = ('auc', 'aucpr', 'map', 'ndcg', 'auc@',
                                 'aucpr@', 'map@', 'ndcg@')
-            if metric != 'mape' and any(metric.startswith(x) for x in maximize_metrics):
-                self.maximize = True
-            else:
-                self.maximize = False
-
-        if self.maximize:
-            improve_op = maximize
-        else:
-            improve_op = minimize
-
+            self.maximize = metric != 'mape' and any(
+                metric.startswith(x) for x in maximize_metrics
+            )
+        improve_op = maximize if self.maximize else minimize
         assert improve_op
 
         if not self.stopping_history:  # First round
@@ -399,10 +393,7 @@ class EarlyStopping(TrainingCallback):
             model.set_attr(best_score=str(record), best_iteration=str(epoch))
             self.current_rounds = 0  # reset
 
-        if self.current_rounds >= self.rounds:
-            # Should stop
-            return True
-        return False
+        return self.current_rounds >= self.rounds
 
     def after_iteration(self, model, epoch: int,
                         evals_log: TrainingCallback.EvalsLog) -> bool:
@@ -472,19 +463,19 @@ class EvaluationMonitor(TrainingCallback):
     def _fmt_metric(
         self, data: str, metric: str, score: float, std: Optional[float]
     ) -> str:
-        if std is not None and self.show_stdv:
-            msg = f"\t{data + '-' + metric}:{score:.5f}+{std:.5f}"
-        else:
-            msg = f"\t{data + '-' + metric}:{score:.5f}"
-        return msg
+        return (
+            f"\t{data}-{metric}:{score:.5f}+{std:.5f}"
+            if std is not None and self.show_stdv
+            else f"\t{data}-{metric}:{score:.5f}"
+        )
 
     def after_iteration(self, model, epoch: int,
                         evals_log: TrainingCallback.EvalsLog) -> bool:
         if not evals_log:
             return False
 
-        msg: str = f'[{epoch}]'
         if rabit.get_rank() == self.printer_rank:
+            msg: str = f'[{epoch}]'
             for data, metric in evals_log.items():
                 for metric_name, log in metric.items():
                     stdv: Optional[float] = None
@@ -548,8 +539,13 @@ class TrainingCheckPoint(TrainingCallback):
     def after_iteration(self, model, epoch: int,
                         evals_log: TrainingCallback.EvalsLog) -> bool:
         if self._epoch == self._iterations:
-            path = os.path.join(self._path, self._name + '_' + str(epoch) +
-                                ('.pkl' if self._as_pickle else '.json'))
+            path = os.path.join(
+                self._path,
+                (
+                    f'{self._name}_{epoch}'
+                    + ('.pkl' if self._as_pickle else '.json')
+                ),
+            )
             self._epoch = 0
             if rabit.get_rank() == 0:
                 if self._as_pickle:

@@ -137,7 +137,7 @@ class TestInplacePredict:
         cls.rng = np.random.RandomState(1994)
 
         cls.X = cls.rng.randn(cls.rows, cls.cols)
-        missing_idx = [i for i in range(0, cls.cols, 4)]
+        missing_idx = list(range(0, cls.cols, 4))
         cls.X[:, missing_idx] = cls.missing  # set to be missing
 
         cls.y = cls.rng.randn(cls.rows)

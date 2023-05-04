@@ -35,7 +35,7 @@ class ModelView(DetailView):
         if object is None:
             return HttpResponseNotFound("Model not found")
 
-        context["title"] = object.project.name + " - " + object.algorithm_name
+        context["title"] = f"{object.project.name} - {object.algorithm_name}"
         context["features"] = {
             feature: object.snapshot.analysis.get(f"{feature}_p50")
             for feature in object.snapshot.columns.keys() - object.snapshot.y_column_name
@@ -83,8 +83,7 @@ class ModelListView(ListView):
                 project.id,
             )
 
-        context = default_context({"projects": projects})
-        return context
+        return default_context({"projects": projects})
 
 
 class ModelViewSet(viewsets.ModelViewSet):

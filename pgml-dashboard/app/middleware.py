@@ -36,13 +36,12 @@ class JwtAuthentcationMiddleware:
 
             # Try
             if not token:
-                auth_header = request.META.get("HTTP_AUTHORIZATION")
+                if auth_header := request.META.get("HTTP_AUTHORIZATION"):
+                    # Extract the token assuming "Bearer <token>"
+                    token = auth_header.split(" ")[-1]
 
-                if not auth_header:
+                else:
                     return HttpResponse(PERMISSION_DENIED, status=403)
-
-                # Extract the token assuming "Bearer <token>"
-                token = auth_header.split(" ")[-1]
 
             token = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         except Exception:

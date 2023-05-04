@@ -76,14 +76,15 @@ class ProjectViewSet(viewsets.ModelViewSet):
     def train(self, request):
         """Train a new project."""
         serializer = NewProjectSerializer(data=request.data)
-        if serializer.is_valid():
-            exists = len(Project.objects.filter(name=serializer.validated_data["project_name"])) > 0
+        if not serializer.is_valid():
+            return Response(status=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+        exists = len(Project.objects.filter(name=serializer.validated_data["project_name"])) > 0
 
-            with connection.cursor() as cursor:
-                if not exists:
-                    try:
-                        cursor.execute(
-                            """
+        with connection.cursor() as cursor:
+            if not exists:
+                try:
+                    cursor.execute(
+                        """
                             SELECT * FROM pgml.train_joint(
                                 project_name => %s,
                                 task => %s,
@@ -92,44 +93,42 @@ class ProjectViewSet(viewsets.ModelViewSet):
                                 algorithm => %s
                             )
                         """,
-                            [
-                                serializer.validated_data["project_name"],
-                                serializer.validated_data["task"],
-                                serializer.validated_data["relation_name"],
-                                serializer.validated_data["y_column_name"],
-                                serializer.validated_data["algorithms"][0],
-                            ],
-                        )
-                    except InternalError as e:
-                        return Response(
-                            status=status.HTTP_400_BAD_REQUEST,
-                            data={
-                                "error": str(e),
-                            },
-                        )
-                if exists:
-                    algorithms = serializer.validated_data["algorithms"]
-                else:
-                    algorithms = serializer.validated_data["algorithms"][1:]
-
-                for algorithm in algorithms:
-                    cursor.execute(
-                        """
+                        [
+                            serializer.validated_data["project_name"],
+                            serializer.validated_data["task"],
+                            serializer.validated_data["relation_name"],
+                            serializer.validated_data["y_column_name"],
+                            serializer.validated_data["algorithms"][0],
+                        ],
+                    )
+                except InternalError as e:
+                    return Response(
+                        status=status.HTTP_400_BAD_REQUEST,
+                        data={
+                            "error": str(e),
+                        },
+                    )
+            algorithms = (
+                serializer.validated_data["algorithms"]
+                if exists
+                else serializer.validated_data["algorithms"][1:]
+            )
+            for algorithm in algorithms:
+                cursor.execute(
+                    """
                     SELECT * FROM pgml.train(
                         project_name => %s,
                         algorithm => %s
                     )
                 """,
-                        [
-                            serializer.validated_data["project_name"],
-                            algorithm,
-                        ],
-                    )
+                    [
+                        serializer.validated_data["project_name"],
+                        algorithm,
+                    ],
+                )
 
-                project = Project.objects.filter(name=serializer.validated_data["project_name"]).first()
-                return Response(status=status.HTTP_201_CREATED, data=ProjectSerializer(project).data)
-        else:
-            return Response(status=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+            project = Project.objects.filter(name=serializer.validated_data["project_name"]).first()
+            return Response(status=status.HTTP_201_CREATED, data=ProjectSerializer(project).data)
 
 
 class NewProjectView(TemplateView):
@@ -147,7 +146,7 @@ class NewProjectView(TemplateView):
             """
             )
             rows = cursor.fetchall()
-            tables = list(map(lambda x: x[0] + "." + x[1], rows))
+            tables = list(map(lambda x: f"{x[0]}.{x[1]}", rows))
             context["tables"] = tables
         return context
 

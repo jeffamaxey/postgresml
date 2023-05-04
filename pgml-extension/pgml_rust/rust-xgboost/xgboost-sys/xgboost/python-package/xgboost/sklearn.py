@@ -685,11 +685,11 @@ class XGBModel(XGBModelBase):
             "early_stopping_rounds",
             "callbacks",
         }
-        filtered = {}
-        for k, v in params.items():
-            if k not in wrapper_specific and not callable(v):
-                filtered[k] = v
-        return filtered
+        return {
+            k: v
+            for k, v in params.items()
+            if k not in wrapper_specific and not callable(v)
+        }
 
     def get_num_boosting_rounds(self) -> int:
         """Gets the number of xgboost boosting rounds."""
@@ -719,7 +719,7 @@ class XGBModel(XGBModelBase):
                 json.dumps({k: v})
                 meta[k] = v
             except TypeError:
-                warnings.warn(str(k) + ' is not saved in Scikit-Learn meta.', UserWarning)
+                warnings.warn(f'{str(k)} is not saved in Scikit-Learn meta.', UserWarning)
         meta['_estimator_type'] = self._get_type()
         meta_str = json.dumps(meta)
         self.get_booster().set_attr(scikit_learn=meta_str)
@@ -784,11 +784,7 @@ class XGBModel(XGBModelBase):
         Optional[Sequence[TrainingCallback]],
     ]:
         """Configure parameters for :py:meth:`fit`."""
-        if isinstance(booster, XGBModel):
-            model: Optional[Union[Booster, str]] = booster.get_booster()
-        else:
-            model = booster
-
+        model = booster.get_booster() if isinstance(booster, XGBModel) else booster
         def _deprecated(parameter: str) -> None:
             warnings.warn(
                 f"`{parameter}` in `fit` method is deprecated for better compatibility "
@@ -824,7 +820,7 @@ class XGBModel(XGBModelBase):
                 # Parameter from constructor or set_params
                 metric = _metric_decorator(eval_metric)
             else:
-                params.update({"eval_metric": eval_metric})
+                params["eval_metric"] = eval_metric
 
         # Configure early_stopping_rounds
         if early_stopping_rounds is not None:
@@ -981,9 +977,7 @@ class XGBModel(XGBModelBase):
         # Inplace predict doesn't handle as many data types as DMatrix, but it's
         # sufficient for dask interface where input is simpiler.
         predictor = self.get_params().get("predictor", None)
-        if predictor in ("auto", None) and self.booster != "gblinear":
-            return True
-        return False
+        return predictor in ("auto", None) and self.booster != "gblinear"
 
     def _get_iteration_range(
         self, iteration_range: Optional[Tuple[int, int]]
@@ -1202,6 +1196,7 @@ class XGBModel(XGBModelBase):
 
         def dft() -> str:
             return "weight" if self.booster == "gblinear" else "gain"
+
         score = b.get_score(
             importance_type=self.importance_type if self.importance_type else dft()
         )
@@ -1213,9 +1208,7 @@ class XGBModel(XGBModelBase):
         all_features = [score.get(f, 0.) for f in feature_names]
         all_features_arr = np.array(all_features, dtype=np.float32)
         total = all_features_arr.sum()
-        if total == 0:
-            return all_features_arr
-        return all_features_arr / total
+        return all_features_arr if total == 0 else all_features_arr / total
 
     @property
     def coef_(self) -> np.ndarray:
@@ -1240,11 +1233,10 @@ class XGBModel(XGBModelBase):
         coef = np.array(json.loads(b.get_dump(dump_format='json')[0])['weight'])
         # Logic for multiclass classification
         n_classes = getattr(self, 'n_classes_', None)
-        if n_classes is not None:
-            if n_classes > 2:
-                assert len(coef.shape) == 1
-                assert coef.shape[0] % n_classes == 0
-                coef = coef.reshape((n_classes, -1))
+        if n_classes is not None and n_classes > 2:
+            assert len(coef.shape) == 1
+            assert coef.shape[0] % n_classes == 0
+            coef = coef.reshape((n_classes, -1))
         return coef
 
     @property
@@ -1275,16 +1267,13 @@ PredtT = TypeVar("PredtT", bound=np.ndarray)
 
 def _cls_predict_proba(n_classes: int, prediction: PredtT, vstack: Callable) -> PredtT:
     assert len(prediction.shape) <= 2
-    if len(prediction.shape) == 2 and prediction.shape[1] == n_classes:
-        # multi-class
-        return prediction
-    if (
-        len(prediction.shape) == 2
-        and n_classes == 2
-        and prediction.shape[1] >= n_classes
-    ):
-        # multi-label
-        return prediction
+    if len(prediction.shape) == 2:
+        if prediction.shape[1] == n_classes:
+            # multi-class
+            return prediction
+        if n_classes == 2 and prediction.shape[1] >= n_classes:
+            # multi-label
+            return prediction
     # binary logistic function
     classone_probs = prediction
     classzero_probs = 1.0 - classone_probs
@@ -1309,7 +1298,7 @@ class XGBClassifier(XGBModel, XGBClassifierBase):
     ) -> None:
         # must match the parameters for `get_params`
         self.use_label_encoder = use_label_encoder
-        if use_label_encoder is True:
+        if use_label_encoder:
             raise ValueError("Label encoder was removed in 1.6.")
         super().__init__(objective=objective, **kwargs)
 
@@ -1806,10 +1795,9 @@ class XGBRanker(XGBModel, XGBRankerMixIn):
         if group is None and qid is None:
             raise ValueError("group or qid is required for ranking task")
 
-        if eval_set is not None:
-            if eval_group is None and eval_qid is None:
-                raise ValueError(
-                    "eval_group or eval_qid is required if eval_set is not None")
+        if eval_set is not None and eval_group is None and eval_qid is None:
+            raise ValueError(
+                "eval_group or eval_qid is required if eval_set is not None")
         train_dmatrix, evals = _wrap_evaluation_matrices(
             missing=self.missing,
             X=X,

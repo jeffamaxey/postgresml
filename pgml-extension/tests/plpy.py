@@ -4,15 +4,11 @@ execute_results = deque()
 
 
 def quote_literal(literal):
-    return "'" + literal + "'"
+    return f"'{literal}'"
 
 
 def execute(sql, lines=0):
-    if len(execute_results) > 0:
-        result = execute_results.popleft()
-        return result
-    else:
-        return []
+    return execute_results.popleft() if len(execute_results) > 0 else []
 
 
 def add_mock_result(result):

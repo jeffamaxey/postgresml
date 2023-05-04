@@ -51,14 +51,14 @@ def get(request, id):
             columns[column_name] = {
                 "name": column_name,
                 "type": snapshot.columns[column_name],
-                "q1": snapshot.analysis[column_name + "_p25"],
-                "median": snapshot.analysis[column_name + "_p50"],
-                "q3": snapshot.analysis[column_name + "_p75"],
-                "mean": snapshot.analysis[column_name + "_mean"],
-                "stddev": snapshot.analysis[column_name + "_stddev"],
-                "min": snapshot.analysis[column_name + "_min"],
-                "max": snapshot.analysis[column_name + "_max"],
-                "dip": snapshot.analysis[column_name + "_dip"],
+                "q1": snapshot.analysis[f"{column_name}_p25"],
+                "median": snapshot.analysis[f"{column_name}_p50"],
+                "q3": snapshot.analysis[f"{column_name}_p75"],
+                "mean": snapshot.analysis[f"{column_name}_mean"],
+                "stddev": snapshot.analysis[f"{column_name}_stddev"],
+                "min": snapshot.analysis[f"{column_name}_min"],
+                "max": snapshot.analysis[f"{column_name}_max"],
+                "dip": snapshot.analysis[f"{column_name}_dip"],
                 "samples": SafeString(json.dumps(sample)),
             }
 
@@ -136,22 +136,21 @@ class SnapshotViewSet(viewsets.ModelViewSet):
     def snapshot(self, request):
         """Create a snapshot using pgml.snapshot"""
         serializer = NewSnapshotSerializer(data=request.data)
-        if serializer.is_valid():
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    """
+        if not serializer.is_valid():
+            return Response(status=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
                     SELECT * FROM pgml.snapshot(
                         relation_name => %s,
                         y_column_name => %s
                     )
                 """,
-                    [
-                        serializer.validated_data["relation_name"],
-                        serializer.validated_data["y_column_name"],
-                    ],
-                )
-                result = cursor.fetchone()
-            snapshot = Snapshot.objects.filter(pk=result[0]).first()
-            return Response(status=status.HTTP_201_CREATED, data=SnapshotSerializer(snapshot).data)
-        else:
-            return Response(status=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+                [
+                    serializer.validated_data["relation_name"],
+                    serializer.validated_data["y_column_name"],
+                ],
+            )
+            result = cursor.fetchone()
+        snapshot = Snapshot.objects.filter(pk=result[0]).first()
+        return Response(status=status.HTTP_201_CREATED, data=SnapshotSerializer(snapshot).data)

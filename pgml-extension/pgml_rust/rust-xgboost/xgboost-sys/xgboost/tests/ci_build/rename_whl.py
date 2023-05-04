@@ -8,7 +8,7 @@ def cd(path):
     path = os.path.normpath(path)
     cwd = os.getcwd()
     os.chdir(path)
-    print("cd " + path)
+    print(f"cd {path}")
     try:
         yield path
     finally:
@@ -16,7 +16,7 @@ def cd(path):
 
 
 if len(sys.argv) != 4:
-    print('Usage: {} [wheel to rename] [commit id] [platform tag]'.format(sys.argv[0]))
+    print(f'Usage: {sys.argv[0]} [wheel to rename] [commit id] [platform tag]')
     sys.exit(1)
 
 
@@ -35,7 +35,7 @@ with cd(dirname):
                 'commit_id': commit_id,
                 'platform_tag': platform_tag}
     new_name = '{pkg_name}-{version}+{commit_id}-py3-none-{platform_tag}.whl'.format(**keywords)
-    print('Renaming {} to {}...'.format(basename, new_name))
+    print(f'Renaming {basename} to {new_name}...')
     if os.path.isfile(new_name):
         os.remove(new_name)
     os.rename(basename, new_name)

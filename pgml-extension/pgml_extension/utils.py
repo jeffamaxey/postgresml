@@ -33,16 +33,16 @@ def timer(message="elapsed time:", level=logging.INFO, logger=None):
             delta = _nested_timers - _previous_timer_level
             length = _nested_timers * 2
             if delta < 0:
-                _ascii_pipes = _ascii_pipes[0:length]
+                _ascii_pipes = _ascii_pipes[:length]
                 join = "┌" if _ascii_pipes[-2] == " " else "├"
-                _ascii_pipes = _ascii_pipes[0:-2] + join + "─"
+                _ascii_pipes = _ascii_pipes[:-2] + join + "─"
             else:
                 _ascii_pipes = re.sub(r"[├┌]", "│", _ascii_pipes).replace("─", " ")
                 if delta == 0:
-                    _ascii_pipes = _ascii_pipes[:-2] + "├─"
+                    _ascii_pipes = f"{_ascii_pipes[:-2]}├─"
                 else:
                     gap = length - len(_ascii_pipes) - 2
                     _ascii_pipes = _ascii_pipes + " " * gap + "┌─"
 
         _previous_timer_level = _nested_timers
-        logger.log(level, (_ascii_pipes + "[" + str(time) + "] " + message))
+        logger.log(level, f"{_ascii_pipes}[{str(time)}] {message}")

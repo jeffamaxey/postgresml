@@ -2,6 +2,7 @@
 """
 demo python script of rabit
 """
+
 from __future__ import print_function
 import os
 import sys
@@ -13,9 +14,7 @@ import rabit
 rabit.init()
 n = 3
 rank = rabit.get_rank()
-s = None
-if rank == 0:
-    s = {'hello world':100, 2:3}
+s = {'hello world':100, 2:3} if rank == 0 else None
 print('@node[%d] before-broadcast: s=\"%s\"' % (rank, str(s)))
 s = rabit.broadcast(s, 0)
 

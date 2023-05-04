@@ -30,8 +30,7 @@ def test_with_autotools(args):
         CXX = os.path.join(mingw_bin, 'g++.exe')
         CC = os.path.join(mingw_bin, 'gcc.exe')
         cmd = ['R.exe', 'CMD', 'INSTALL', str(os.path.curdir)]
-        env = os.environ.copy()
-        env.update({'CC': CC, 'CXX': CXX})
+        env = os.environ | {'CC': CC, 'CXX': CXX}
         subprocess.check_call(cmd, env=env)
         subprocess.check_call([
             'R.exe', '-q', '-e',
@@ -50,8 +49,7 @@ def test_with_cmake(args):
             mingw_bin = get_mingw_bin()
             CXX = os.path.join(mingw_bin, 'g++.exe')
             CC = os.path.join(mingw_bin, 'gcc.exe')
-            env = os.environ.copy()
-            env.update({'CC': CC, 'CXX': CXX})
+            env = os.environ | {'CC': CC, 'CXX': CXX}
             subprocess.check_call([
                 'cmake', os.path.pardir, '-DUSE_OPENMP=ON', '-DR_LIB=ON',
                 '-DCMAKE_CONFIGURATION_TYPES=Release', '-G', 'Unix Makefiles',

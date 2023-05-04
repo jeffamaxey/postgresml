@@ -87,9 +87,9 @@ def check_point_callback():
             if i == 0:
                 continue
             if as_pickle:
-                path = os.path.join(tmpdir, 'model_' + str(i) + '.pkl')
+                path = os.path.join(tmpdir, f'model_{str(i)}.pkl')
             else:
-                path = os.path.join(tmpdir, 'model_' + str(i) + '.json')
+                path = os.path.join(tmpdir, f'model_{str(i)}.json')
             assert(os.path.exists(path))
 
     X, y = load_breast_cancer(return_X_y=True)
